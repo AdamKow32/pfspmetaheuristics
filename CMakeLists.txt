@@ -1,6 +1,25 @@
-cmake_minimum_required(VERSION 3.30)
-project(untitled3)
+cmake_minimum_required(VERSION 3.10)
+project(PFSP_Evolutionary)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(untitled3 main.cpp)
+file(GLOB SOURCES
+        "src/*.cpp"
+        "main.cpp"
+)
+
+file(GLOB HEADERS
+        "include/*.hpp"
+        "include/*.h"
+)
+
+include_directories(include)
+
+add_executable(PFSP_Solver ${SOURCES} ${HEADERS})
+
+if(MSVC)
+    target_compile_options(PFSP_Solver PRIVATE /W4 /O2)
+else()
+    target_compile_options(PFSP_Solver PRIVATE -Wall -O3)
+endif()
