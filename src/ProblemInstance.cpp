@@ -36,6 +36,6 @@ void ProblemInstance::print() const {
         std::cout << "M" << i+1 << ": ";
         for (int j = 0; j < numTasks; ++j)
             std::cout << std::setw(3) << processingTimes[i][j] << " ";
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
 }
