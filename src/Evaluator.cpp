@@ -13,21 +13,21 @@ int Evaluator::evaluate(const std::vector<int>& schedule) const {
     const int J = inst.numTasks;
     const int M = inst.numMachines;
 
-    std::vector c(J, std::vector(M,0));
+    std::vector c(J * M, 0);
 
     for (int j = 0; j < J; ++j) {
         for (int m = 0; m < M; ++m) {
-            int pt = inst.processingTimes[m][schedule[j]];
-            if (j == 0 && m == 0) c[j][m] = pt;
-            else if (j == 0) c[j][m] = c[j][m-1] + pt;
-            else if (m == 0) c[j][m] = c[j-1][m] + pt;
-            else c[j][m] = std::max(c[j-1][m],c[j][m-1]) + pt;
+            int pt = inst.processingTimes[m * J + j];
+            if (j == 0 && m == 0)   c[J*M + m] = pt;
+            else if (j == 0)        c[J*M + m] = c[J*M + m-1] + pt;
+            else if (m == 0)        c[J*M + m] = c[(j-1)*M + m] + pt;
+            else                    c[J*M + m] = std::max(c[j-1]*M + m,c[j*M + m-1]) + pt;
         }
     }
 
     int total = 0;
     for (int j = 0; j < J; ++j)
-        total += c[j][M-1];
+        total += c[j*M + (M-1)];
     return total;
 }
 
