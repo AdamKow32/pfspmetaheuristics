@@ -8,7 +8,7 @@ struct Individual{
     int fitness;
 
     Individual();
-    Individual(const std::vector<int>& s, int f) : schedule(s), fitness(f) {}
+    Individual(const std::vector<int>& s, int f);
 
     bool operator<(const Individual& other) const {
         return fitness < other.fitness;
