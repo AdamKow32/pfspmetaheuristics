@@ -16,6 +16,5 @@ public:
 
     std::vector<Individual> initializePopulation(int size);
 
-    // in future here I will create a selection, cross and mutation
 };
 #endif //EVOLUTIONARYALGORITHM_H
