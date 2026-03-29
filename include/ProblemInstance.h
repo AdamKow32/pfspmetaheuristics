@@ -9,10 +9,11 @@ public:
     int numTasks;
     int numMachines;
 
-    std::vector<std::vector<int>> processingTimes;
+    std::vector<int> processingTimes;
+
+    int p(int machine, int job) const;
 
     bool loadFromFile(const std::string& filePath);
-
     void print() const;
 };
 #endif //PROBLEMINSTANCE_H
