@@ -8,6 +8,10 @@ bool Individual::operator<(const Individual &other) const {
     return fitness < other.fitness;
 }
 
+bool Individual::hasFitness() const {
+    return fitness >= 0;
+}
+
 void Individual::print(std::ostream &os) const {
     os << "[";
     for (int i = 0; i < static_cast<int>(schedule.size()); ++i) {

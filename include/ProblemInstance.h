@@ -11,8 +11,6 @@ public:
 
     std::vector<int> processingTimes;
 
-    int p(int machine, int job) const;
-
     bool loadFromFile(const std::string& filePath);
     void print() const;
 };
