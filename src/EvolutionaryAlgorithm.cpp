@@ -47,7 +47,7 @@ Individual EvolutionaryAlgorithm::run() {
         newPopulation.resize(config_.popSize);
         population = std::move(newPopulation);
 
-        auto stats = computeStatistics(0);
+        auto stats = computeStatistics(generation);
         history_.push_back(stats);
 
         if (generation % 10 == 0 || generation == config_.generations) {
@@ -72,24 +72,24 @@ Individual EvolutionaryAlgorithm::createRandomIndividual() const {
 }
 
 std::vector<Individual> EvolutionaryAlgorithm::initializePopulation(int size) {
-    std::vector<Individual> population;
-    population.reserve(size);
+    std::vector<Individual> pop;
+    pop.reserve(size);
 
     if (config_.initType == "greedy") {
         GreedyAlgorithm ga(instance,evaluator_);
-        for (int i = 0; i < instance.numTasks && static_cast<int>(population.size()) < size; ++i) {
-            population.push_back(ga.solve(i));
+        for (int i = 0; i < instance.numTasks && static_cast<int>(pop.size()) < size; ++i) {
+            pop.push_back(ga.solve(i));
         }
     }
 
-    while (static_cast<int>(population.size()) < size)
-        population.push_back(createRandomIndividual());
+    while (static_cast<int>(pop.size()) < size)
+        pop.push_back(createRandomIndividual());
 
-    return population;
+    return pop;
 }
 
-void EvolutionaryAlgorithm::evaluateAll(std::vector<Individual>& population) {
-    for (auto& individual : population) {
+void EvolutionaryAlgorithm::evaluateAll(std::vector<Individual>& pop) {
+    for (auto& individual : pop) {
         if (!individual.hasFitness())
             evaluator_.evaluate(individual);
     }
