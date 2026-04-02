@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <random>
-#include <unordered_map>
 #include "Individual.h"
 #include "ProblemInstance.h"
 #include "Evaluator.h"
@@ -18,7 +17,6 @@ public:
         int    eliteCount     = 2;
         std::string mutationType  = "inversion";
         std::string crossoverType = "ox";
-        std::string selectionType = "tournament";
         std::string initType      = "random";
         int    seed           = -1;
         std::string logFile   = "resultsEA.csv";
@@ -33,6 +31,11 @@ public:
 
 
     EvolutionaryAlgorithm(const ProblemInstance& inst, Evaluator& evaluator, const Config& config);
+
+    Individual run();
+
+    const std::vector<GenerationStatistics>& history() const;
+
 private:
     const ProblemInstance& instance;
     Evaluator& evaluator_;
@@ -50,8 +53,6 @@ private:
 
     // Selection
     const Individual& tournament() const;
-    const Individual& roulette() const;
-    const Individual& selectOne() const;
     std::vector<Individual> elite(int count) const;
 
     // Crossover
