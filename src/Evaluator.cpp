@@ -17,11 +17,11 @@ int Evaluator::evaluate(const std::vector<int>& schedule) const {
 
     for (int j = 0; j < J; ++j) {
         for (int m = 0; m < M; ++m) {
-            int pt = inst.processingTimes[m * J + j];
-            if (j == 0 && m == 0)   c[J*M + m] = pt;
-            else if (j == 0)        c[J*M + m] = c[J*M + m-1] + pt;
-            else if (m == 0)        c[J*M + m] = c[(j-1)*M + m] + pt;
-            else                    c[J*M + m] = std::max(c[j-1]*M + m,c[j*M + m-1]) + pt;
+            int pt = inst.processingTimes[m * J + schedule[j]];
+            if      (j == 0 && m == 0) c[j*M + m] = pt;
+            else if (j == 0)           c[j*M + m] = c[j*M + m-1] + pt;
+            else if (m == 0)           c[j*M + m] = c[(j-1)*M + m] + pt;
+            else                       c[j*M + m] = std::max(c[(j-1)*M + m], c[j*M + m-1]) + pt;
         }
     }
 

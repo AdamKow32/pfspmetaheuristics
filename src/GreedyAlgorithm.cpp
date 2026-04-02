@@ -22,11 +22,10 @@ int GreedyAlgorithm::appendJob(std::vector<int> &c, int job, bool empty) const {
 
 Individual GreedyAlgorithm::solve(int startJob) const {
     const int J = instance_.numTasks;
-
-    std::vector<bool> used (J, false);
+    std::vector used (J, false);
     std::vector<int> sched;
     sched.reserve(J);
-    std::vector<int> c(instance_.numMachines, 0);
+    std::vector c(instance_.numMachines, 0);
     bool empty = true;
 
     if (startJob >= 0 && startJob < J) {
@@ -39,25 +38,28 @@ Individual GreedyAlgorithm::solve(int startJob) const {
     while (static_cast<int>(sched.size()) < J) {
         int bestJob = -1;
         int bestC = std::numeric_limits<int>::max();
-
         for (int j = 0; j < J; ++j) {
             if (used[j]) continue;
-
             std::vector<int> cTmp = c;
             int cj = appendJob(cTmp, j, empty);
-            if (cj < bestC) {
-                bestC = cj;
-                bestJob = j;
-            }
+            if (cj < bestC) { bestC = cj; bestJob = j; }
         }
         appendJob(c, bestJob, empty);
         sched.push_back(bestJob);
         used[bestJob] = true;
         empty = false;
     }
+
+    Individual ind(sched, -1);
+    evaluator_.evaluate(ind);
+    return ind;
+}
+
+Individual GreedyAlgorithm::solveBest() const {
     Individual best;
     for (int s = 0; s < instance_.numTasks; ++s) {
-        if (Individual cand = solve(s); !best.hasFitness() || cand.fitness < best.fitness)
+        Individual cand = solve(s);
+        if (!best.hasFitness() || cand.fitness < best.fitness)
             best = cand;
     }
     return best;
