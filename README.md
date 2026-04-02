@@ -1,22 +1,34 @@
-## PFSP metaheuristics project
+## PFSP Metaheuristics Solver
 
-The PFSP (Permutation Flowshop Scheduling Problem) consists of determining the optimal order of jobs processed on a set of machines in order to minimize the total completion time.
+A C++17 implementation of metaheuristic algorithms for the Permutation Flowshop Scheduling Problem (PFSP), a classic NP-hard combinatorial optimization problem widely used as a benchmark in scheduling research.
 
-## Problem
+## Problem Definition
 
-PSFP consists of finding a job sequence that minimizes the total completion time of all jobs on the last machine:
+Given J jobs and M machines, find permutation (`x = (x₁, ..., xⱼ)`) that minimizes the total flowtime (sum of completion times of all jobs on last machine):
 
-f(x) = sum C(x_j, M)  for j = 1..J
+```
+f(x) = Σ C(xⱼ, M)   for j = 1..J
+```
 
-where C(x_j, m) is the completion time of job x_j on machine m.
+The completion time `C(xⱼ, m)` is computed recursively:
+ 
+```
+C(x₁, m₁) = p(x₁, m₁)
+C(x₁, m)  = C(x₁, m-1) + p(x₁, m)
+C(xⱼ, m₁) = C(xⱼ₋₁, m₁) + p(xⱼ, m₁)
+C(xⱼ, m)  = max{ C(xⱼ₋₁, m), C(xⱼ, m-1) } + p(xⱼ, m)
+```
 
-## Progress
-So far I've made:
-- load .fsp file
-- Individual representation
-- Objective function f(x)
+where `p(j, m)` is the processing time of job `j` on machine `m`.
 
-I still need to implement random search, greedy algorithm, evolutionary algorithm and CSV logging.
+## Algorithms
+ 
+| Algorithm | Type | Description |
+|-----------|------|-------------|
+| **Random Search** | Baseline | Randomly generates and evaluates permutations |
+| **Greedy** | Constructive heuristic | Builds solution step-by-step, always choosing job with minimum `C(job, M)` |
+| **Evolutionary Algorithm** | Metaheuristic | Population-based search with tournament selection, OX/PMX crossover, swap/inversion mutation and elitism |
+| **Simulated Annealing** | Metaheuristic | Single-solution local search with probabilistic acceptance of worse solutions |
 
 ## License
 
