@@ -16,7 +16,14 @@ file(GLOB HEADERS
 
 include_directories(include)
 
-add_executable(PFSP_Solver ${SOURCES} ${HEADERS})
+add_executable(PFSP_Solver ${SOURCES} ${HEADERS}
+        main.cpp
+        src/Individual.cpp
+        src/ProblemInstance.cpp
+        src/Evaluator.cpp
+        src/GreedyAlgorithm.cpp
+        src/EvolutionaryAlgorithm.cpp
+)
 
 if(MSVC)
     target_compile_options(PFSP_Solver PRIVATE /W4 /O2)
