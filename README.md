@@ -82,7 +82,7 @@ Open the project folder in CLion, it will detect `CMakeLists.txt` automatically 
 ## Benchmark Instances
  
 Taillard PFSP benchmark instances, available at:
-> https://github.com/chneau/gotaillard/tree/master/pfsp/instances
+> https://github.com/chneau/go-taillard/tree/master/pfsp/instances
 > License: MIT
 
 ## Configuration
