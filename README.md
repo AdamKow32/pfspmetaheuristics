@@ -42,7 +42,7 @@ cd pfspmetaheuristics
 ### 2. Download benchmark instances
  
 Download `.fsp` files from:
-> https://github.com/chneau/gotaillard/tree/master/pfsp/instances
+> https://github.com/chneau/go-taillard/tree/master/pfsp/instances
 
 Click on each file → click **Raw** → save to the `data/` folder in the project.
 
