@@ -23,6 +23,8 @@ add_executable(PFSP_Solver ${SOURCES} ${HEADERS}
         src/Evaluator.cpp
         src/GreedyAlgorithm.cpp
         src/EvolutionaryAlgorithm.cpp
+        include/SimulatedAnnealing.h
+        src/SimulatedAnnealing.cpp
 )
 
 if(MSVC)
