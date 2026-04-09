@@ -249,7 +249,7 @@ int main(int argc, char* argv[]) {
     EvolutionaryAlgorithm::Config eaCfg;
     eaCfg.popSize        = 100;
     eaCfg.generations    = 100;
-    eaCfg.px             = 0.7;
+    eaCfg.px             = 0.1;
     eaCfg.pm             = 0.1;
     eaCfg.tournamentSize = 10;
     eaCfg.eliteCount     = 2;
@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
               << std::endl << std::endl;
 
     auto randomStats = runRandomSearch(inst, eval, budget, runs, rng, instance);
-    auto greedyStats = runGreedy      (inst, eval, budget, 1, rng, instance);
+    auto greedyStats = runGreedy      (inst, eval, budget, runs, rng, instance);
     auto eaStats     = runEA          (inst, eval, eaCfg,  runs, instance);
     auto saStats     = runSA          (inst, eval, saCfg,  budget, runs, instance);
 

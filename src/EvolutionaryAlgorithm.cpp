@@ -96,7 +96,7 @@ void EvolutionaryAlgorithm::evaluateAll(std::vector<Individual>& pop) {
 }
 
 const Individual& EvolutionaryAlgorithm::tournament() const {
-    std::uniform_int_distribution<int> distribution(0, static_cast<int>(population.size() - 1));
+    std::uniform_int_distribution distribution(0, static_cast<int>(population.size() - 1));
     int best = distribution(random);
     for (int i = 1; i < config_.tournamentSize; ++i) {
         int index =distribution(random);
