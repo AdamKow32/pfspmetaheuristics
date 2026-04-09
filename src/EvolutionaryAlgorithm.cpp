@@ -134,7 +134,7 @@ Individual EvolutionaryAlgorithm::ox(const Individual& p1, const Individual& p2)
     std::vector used(J, false);
 
     for (int k = i; k <= j; ++k) {
-    child[k] =p1.schedule[k];
+    child[k] = p1.schedule[k];
     used[p1.schedule[k]] = true;
     }
 
