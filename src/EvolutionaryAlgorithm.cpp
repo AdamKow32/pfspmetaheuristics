@@ -33,7 +33,7 @@ Individual EvolutionaryAlgorithm::run() {
     for (int generation = 1; generation <= config_.generations; ++generation) {
         std::vector<Individual> newPopulation = elite(config_.eliteCount);
 
-        while (static_cast<int>(newPopulation.size()) < config_.popSize + config_.eliteCount) {
+        while (static_cast<int>(newPopulation.size()) < config_.popSize+config_.eliteCount) {
             const Individual& p1 = tournament();
             const Individual& p2 = tournament();
             Individual offspring = applyCrossover(p1, p2);
@@ -180,7 +180,9 @@ Individual EvolutionaryAlgorithm::pmx(const Individual& p1, const Individual& p2
 
 Individual EvolutionaryAlgorithm::applyCrossover(const Individual& p1, const Individual& p2) {
     std::uniform_real_distribution coin(0.0, 1.0);
-    if (coin(random) >= config_.px) return p1;
+    if (coin(random) >= config_.px) {
+        return (coin(random) < 0.5) ? p1 : p2;
+    }
     if (config_.crossoverType == "pmx") return pmx(p1, p2);
     return ox(p1, p2);
 }
@@ -220,7 +222,7 @@ Individual EvolutionaryAlgorithm::applyMutation(Individual ind) const {
 EvolutionaryAlgorithm::GenerationStatistics
 EvolutionaryAlgorithm::computeStatistics(int gen) const {
     int    best  = std::numeric_limits<int>::max();
-    int    worst = 0;
+    int    worst = std::numeric_limits<int>::min();
     double sum   = 0.0;
     for (const auto& ind : population) {
         if (ind.fitness < best)  best  = ind.fitness;
@@ -240,7 +242,7 @@ void EvolutionaryAlgorithm::saveLogs() const {
     std::ofstream logFile(config_.logFile);
 
     if (!logFile.is_open()) return;
-    logFile << "generation;best;avg;worse";
+    logFile << "generation;best;avg;worse\n";
     for (const auto& s : history_)
         logFile << s.generation << ";"
                 << s.best       << ";"

@@ -3,7 +3,9 @@
 #include <iostream>
 #include <iomanip>
 #include <filesystem>
+#include <sstream>
 
+// wczytywanie z pliku tailard
 bool ProblemInstance::loadFromFile(const std::string& filePath) {
     std::ifstream file(filePath);
 

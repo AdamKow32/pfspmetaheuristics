@@ -13,7 +13,7 @@ int GreedyAlgorithm::appendJob(std::vector<int> &c, int job, bool empty) const {
         int pt = instance_.processingTimes[m * instance_.numTasks + job];
         if (empty && m == 0) cn[m] = pt;
         else if (empty)      cn[m] = cn[m-1] + pt;
-        else if (m==0)       cn[m] = cn[m] + pt;
+        else if (m==0)       cn[m] = c[m] + pt;
         else                 cn[m] = std::max(c[m], cn[m-1])+ pt;
     }
     c=cn;
