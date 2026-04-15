@@ -23,17 +23,20 @@ Individual EvolutionaryAlgorithm::run() {
     history_.clear();
     population = initializePopulation(config_.popSize);
     evaluateAll(population);
-    for (const auto& individual : population) updateBest(individual);
+    for (const auto& ind : population) updateBest(ind);
     history_.push_back(computeStatistics(0));
 
     std::cout << "Generation 0 | best = " << history_[0].best
-              << " Average = "             << history_[0].avg
-              << " Worst = "              << history_[0].worst << std::endl;
+              << " avg = "                 << history_[0].avg
+              << " worst = "               << history_[0].worst << std::endl;
 
-    for (int generation = 1; generation <= config_.generations; ++generation) {
+    int generation = 0;
+    while (evaluator_.evalCount() < config_.budget) {
+        ++generation;
         std::vector<Individual> newPopulation = elite(config_.eliteCount);
 
-        while (static_cast<int>(newPopulation.size()) < config_.popSize+config_.eliteCount) {
+        while (static_cast<int>(newPopulation.size()) < config_.popSize
+               && evaluator_.evalCount() < config_.budget) {
             const Individual& p1 = tournament();
             const Individual& p2 = tournament();
             Individual offspring = applyCrossover(p1, p2);
@@ -41,23 +44,25 @@ Individual EvolutionaryAlgorithm::run() {
             evaluator_.evaluate(offspring);
             updateBest(offspring);
             newPopulation.push_back(std::move(offspring));
-        }
+               }
 
-        std::sort(newPopulation.begin(), newPopulation.end());
-        newPopulation.resize(config_.popSize);
+        while (static_cast<int>(newPopulation.size()) < config_.popSize)
+            newPopulation.push_back(elite(1)[0]);
+
         population = std::move(newPopulation);
 
         auto stats = computeStatistics(generation);
         history_.push_back(stats);
 
-        if (generation % 10 == 0 || generation == config_.generations) {
-            std::cout << "Generation "           << generation
-                      << " | Best = "            << stats.best
-                      << " Average = "           << stats.avg
-                      << " Worst = "             << stats.worst
-                      << " Global best = "       << bestEver.fitness << std::endl;
+        if (generation % 10 == 0) {
+            std::cout << "Generation "     << generation
+                      << " | best = "      << stats.best
+                      << " avg = "         << stats.avg
+                      << " worst = "       << stats.worst
+                      << " global best = " << bestEver.fitness << std::endl;
         }
     }
+
     saveLogs();
     return bestEver;
 }
@@ -76,10 +81,9 @@ std::vector<Individual> EvolutionaryAlgorithm::initializePopulation(int size) {
     pop.reserve(size);
 
     if (config_.initType == "greedy") {
-        GreedyAlgorithm ga(instance,evaluator_);
-        for (int i = 0; i < instance.numTasks && static_cast<int>(pop.size()) < size; ++i) {
+        GreedyAlgorithm ga(instance, evaluator_);
+        for (int i = 0; i < instance.numTasks && static_cast<int>(pop.size()) < size; ++i)
             pop.push_back(ga.solve(i));
-        }
     }
 
     while (static_cast<int>(pop.size()) < size)
@@ -89,17 +93,16 @@ std::vector<Individual> EvolutionaryAlgorithm::initializePopulation(int size) {
 }
 
 void EvolutionaryAlgorithm::evaluateAll(std::vector<Individual>& pop) {
-    for (auto& individual : pop) {
+    for (auto& individual : pop)
         if (!individual.hasFitness())
             evaluator_.evaluate(individual);
-    }
 }
 
 const Individual& EvolutionaryAlgorithm::tournament() const {
     std::uniform_int_distribution distribution(0, static_cast<int>(population.size() - 1));
     int best = distribution(random);
     for (int i = 1; i < config_.tournamentSize; ++i) {
-        int index =distribution(random);
+        int index = distribution(random);
         if (population[index].fitness < population[best].fitness) best = index;
     }
     return population[best];
@@ -117,31 +120,26 @@ std::pair<int,int> EvolutionaryAlgorithm::randomSegment(int J, std::mt19937& rng
     std::uniform_int_distribution distribution(0, J-1);
     int i = distribution(rng), j = distribution(rng);
     if (i > j) std::swap(i, j);
-    if (i == j) {
-        if (j < J-1)
-            ++j;
-        else
-            --i;
-    }
-    return {i,j};
+    if (i == j) { if (j < J-1) ++j; else --i; }
+    return {i, j};
 }
 
 Individual EvolutionaryAlgorithm::ox(const Individual& p1, const Individual& p2) const {
-    const int J =static_cast<int>(p1.schedule.size());
-    auto[i,j] = randomSegment(J, random);
+    const int J = static_cast<int>(p1.schedule.size());
+    auto [i, j] = randomSegment(J, random);
 
-    std::vector child(J,-1);
+    std::vector child(J, -1);
     std::vector used(J, false);
 
     for (int k = i; k <= j; ++k) {
-    child[k] = p1.schedule[k];
-    used[p1.schedule[k]] = true;
+        child[k] = p1.schedule[k];
+        used[p1.schedule[k]] = true;
     }
 
     int position = (j+1) % J;
-    int source =(j+1) % J;
-    int filled = 0;
-    int toFill =J - (j-i + 1);
+    int source   = (j+1) % J;
+    int filled   = 0;
+    int toFill   = J - (j - i + 1);
 
     while (filled < toFill) {
         int gene = p2.schedule[source];
@@ -158,16 +156,15 @@ Individual EvolutionaryAlgorithm::ox(const Individual& p1, const Individual& p2)
 
 Individual EvolutionaryAlgorithm::pmx(const Individual& p1, const Individual& p2) const {
     const int J = static_cast<int>(p1.schedule.size());
-    auto[i,j] = randomSegment(J, random);
+    auto [i, j] = randomSegment(J, random);
 
-    std::vector child(J,-1);
+    std::vector child(J, -1);
     for (int k = i; k <= j; ++k)
         child[k] = p1.schedule[k];
 
-
     std::unordered_map<int,int> mapping;
     for (int k = i; k <= j; ++k)
-        mapping[p2.schedule[k]] = p1.schedule[k];
+        mapping[p1.schedule[k]] = p2.schedule[k];
 
     for (int k = 0; k < J; ++k) {
         if (k >= i && k <= j) continue;
@@ -180,9 +177,8 @@ Individual EvolutionaryAlgorithm::pmx(const Individual& p1, const Individual& p2
 
 Individual EvolutionaryAlgorithm::applyCrossover(const Individual& p1, const Individual& p2) {
     std::uniform_real_distribution coin(0.0, 1.0);
-    if (coin(random) >= config_.px) {
+    if (coin(random) >= config_.px)
         return (coin(random) < 0.5) ? p1 : p2;
-    }
     if (config_.crossoverType == "pmx") return pmx(p1, p2);
     return ox(p1, p2);
 }
@@ -210,14 +206,12 @@ Individual EvolutionaryAlgorithm::inversionMutation(Individual ind) const {
     return ind;
 }
 
-
 Individual EvolutionaryAlgorithm::applyMutation(Individual ind) const {
     std::uniform_real_distribution coin(0.0, 1.0);
     if (coin(random) >= config_.pm) return ind;
     if (config_.mutationType == "swap") return swapMutation(std::move(ind));
     return inversionMutation(std::move(ind));
 }
-
 
 EvolutionaryAlgorithm::GenerationStatistics
 EvolutionaryAlgorithm::computeStatistics(int gen) const {
@@ -240,9 +234,8 @@ void EvolutionaryAlgorithm::updateBest(const Individual& ind) {
 void EvolutionaryAlgorithm::saveLogs() const {
     if (config_.logFile.empty()) return;
     std::ofstream logFile(config_.logFile);
-
     if (!logFile.is_open()) return;
-    logFile << "generation;best;avg;worse\n";
+    logFile << "generation;best;avg;worst\n";
     for (const auto& s : history_)
         logFile << s.generation << ";"
                 << s.best       << ";"

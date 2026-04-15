@@ -20,6 +20,7 @@ public:
         std::string initType      = "random";
         int    seed           = -1;
         std::string logFile   = "resultsEA.csv";
+        int budget = 10000;
     };
 
     struct GenerationStatistics {
