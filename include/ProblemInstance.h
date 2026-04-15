@@ -6,8 +6,8 @@
 
 class ProblemInstance {
 public:
-    int numTasks;
-    int numMachines;
+    int numTasks = 0;
+    int numMachines = 0;
 
     std::vector<int> processingTimes;
 
