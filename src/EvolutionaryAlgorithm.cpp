@@ -1,3 +1,8 @@
+/*
+ * @file EvolutionaryAlgorithm.cpp
+ * @brief   Implementation of the Evolutionary Algorithm for PFSP.
+*/
+
 #include "EvolutionaryAlgorithm.h"
 #include "GreedyAlgorithm.h"
 #include <unordered_map>
@@ -19,8 +24,11 @@ EvolutionaryAlgorithm::EvolutionaryAlgorithm(const ProblemInstance& inst, Evalua
     bestEver = Individual({}, std::numeric_limits<int>::max());
 }
 
+// Main loop
 Individual EvolutionaryAlgorithm::run() {
     history_.clear();
+
+    // Initialize and evaluate starting population
     population = initializePopulation(config_.popSize);
     evaluateAll(population);
     for (const auto& ind : population) updateBest(ind);
@@ -31,6 +39,8 @@ Individual EvolutionaryAlgorithm::run() {
               << " worst = "               << history_[0].worst << std::endl;
 
     int generation = 0;
+
+    // Run untill the evaluation budget is exhausted
     while (evaluator_.evalCount() < config_.budget) {
         ++generation;
         std::vector<Individual> newPopulation = elite(config_.eliteCount);
@@ -46,6 +56,7 @@ Individual EvolutionaryAlgorithm::run() {
             newPopulation.push_back(std::move(offspring));
                }
 
+        // IF budget runs out in the middle of generation we will pad with copies of best generation
         while (static_cast<int>(newPopulation.size()) < config_.popSize)
             newPopulation.push_back(elite(1)[0]);
 

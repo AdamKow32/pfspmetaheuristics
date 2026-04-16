@@ -1,3 +1,19 @@
+/**
+ * @file main.cpp
+ * @brief Entry point for PFSP benchmark
+ *
+ * Solves the Permutation Flowshop Scheduling Problem (PFSP) using:
+ *   1. Random Search - baseline; uniform random permutations.
+ *   2. Greedy - deterministic constructive heuristic; run once with J start jobs.
+ *   3. Evolutionary Algorithm (EA) - population-based metaheuristic.
+ *   4. Simulated Annealing (SA) - trajectory-based metaheuristic.
+ *
+ *   Usage:
+ *   ./pfsp <pathtoinstance.fsp>
+ *   for example:
+ *   ./pfsp data/tai20_5_0.fsp
+ */
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -15,6 +31,7 @@
 #include "EvolutionaryAlgorithm.h"
 #include "SimulatedAnnealing.h"
 
+// Statistics
 struct RunStats {
     int    best;
     int    worst;
@@ -44,6 +61,7 @@ void printRunStats(const std::string& label, const RunStats& s) {
               << std::endl;
 }
 
+// Extracts the base filename from a path
 std::string instanceName(const std::string& path) {
     size_t slash = path.find_last_of("/\\");
     std::string name = (slash == std::string::npos) ? path : path.substr(slash + 1);
@@ -51,6 +69,7 @@ std::string instanceName(const std::string& path) {
     return (dot == std::string::npos) ? name : name.substr(0, dot);
 }
 
+// CSV output
 void saveSummaryCSV(const std::string& instance,
                     const RunStats& random, const RunStats& greedy,
                     const RunStats& ea,     const RunStats& sa)
@@ -73,6 +92,7 @@ void saveSummaryCSV(const std::string& instance,
     std::cout << "Results saved -> results/results.csv" << std::endl;
 }
 
+// Algorithm runners
 Individual randomSearch(const ProblemInstance& inst, Evaluator& eval,
                         int budget, std::mt19937& rng, std::ofstream& log)
 {
@@ -236,22 +256,22 @@ int main(int argc, char* argv[]) {
     EvolutionaryAlgorithm::Config eaCfg;
     eaCfg.popSize        = 25;
     eaCfg.generations    = 400;
-    eaCfg.px             = 0.7;
-    eaCfg.pm             = 0.1;
+    eaCfg.px             = 0.5;
+    eaCfg.pm             = 0.7;
     eaCfg.tournamentSize = 5;
-    eaCfg.eliteCount     = 2;
+    eaCfg.eliteCount     = 0;
     eaCfg.mutationType   = "swap";
-    eaCfg.crossoverType  = "ox";
+    eaCfg.crossoverType  = "pmx";
     eaCfg.initType       = "random";
     eaCfg.logFile        = "";
 
     SimulatedAnnealing::Config saCfg;
-    saCfg.initialTemperature = 20000.0;
-    saCfg.coolingRate        = 0.9995;
+    saCfg.initialTemperature = 10000.0;
+    saCfg.coolingRate        = 0.999;
     saCfg.minTemperature     = 0.1;
     saCfg.logFile            = "";
 
-    const int budget = 10000;
+    const int budget = eaCfg.popSize * eaCfg.generations;
     eaCfg.budget = budget;
     const int runs   = 10;
 
