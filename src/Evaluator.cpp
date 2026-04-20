@@ -1,11 +1,7 @@
 #include "Evaluator.h"
 #include <algorithm>
-#include <stdexcept>
 
-Evaluator::Evaluator(const ProblemInstance& instance) : inst(instance){
-    if (instance.numTasks == 0 || instance.numMachines == 0)
-        throw std::invalid_argument("Problem Instance is empty (Evaluator)");
-}
+Evaluator::Evaluator(const ProblemInstance& instance) : inst(instance) {}
 
 int Evaluator::evaluate(const std::vector<int>& schedule) const {
     ++evalCount_;

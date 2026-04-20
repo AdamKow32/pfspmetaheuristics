@@ -5,13 +5,10 @@
 #include <filesystem>
 #include <sstream>
 
-// wczytywanie z pliku tailard
 bool ProblemInstance::loadFromFile(const std::string& filePath) {
     std::ifstream file(filePath);
 
     if (!file.is_open()) {
-        std::cerr << "ERROR: Could not open file "
-          << (std::filesystem::current_path() / filePath) << std::endl;
         return false;
     }
     std::string line;
@@ -26,7 +23,6 @@ bool ProblemInstance::loadFromFile(const std::string& filePath) {
     }
 
     if (numTasks == 0 || numMachines == 0) {
-        std::cerr << "ERROR: Could not read number of Tasks OR number of Machines value" << std::endl;
         return false;
     }
 
@@ -38,7 +34,6 @@ bool ProblemInstance::loadFromFile(const std::string& filePath) {
     for (int m = 0; m < numMachines; ++m) {
         for (int j = 0; j < numTasks; ++j) {
             if (!(file >> processingTimes[m * numTasks + j])) {
-                std::cerr << "ERROR: Not enough data at machine" << m << std::endl;
                 return false;
             }
         }

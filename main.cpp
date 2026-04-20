@@ -1,19 +1,3 @@
-/**
- * @file main.cpp
- * @brief Entry point for PFSP benchmark
- *
- * Solves the Permutation Flowshop Scheduling Problem (PFSP) using:
- *   1. Random Search - baseline; uniform random permutations.
- *   2. Greedy - deterministic constructive heuristic; run once with J start jobs.
- *   3. Evolutionary Algorithm (EA) - population-based metaheuristic.
- *   4. Simulated Annealing (SA) - trajectory-based metaheuristic.
- *
- *   Usage:
- *   ./pfsp <pathtoinstance.fsp>
- *   for example:
- *   ./pfsp data/tai20_5_0.fsp
- */
-
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -31,7 +15,6 @@
 #include "EvolutionaryAlgorithm.h"
 #include "SimulatedAnnealing.h"
 
-// Statistics
 struct RunStats {
     int    best;
     int    worst;
@@ -61,7 +44,25 @@ void printRunStats(const std::string& label, const RunStats& s) {
               << std::endl;
 }
 
-// Extracts the base filename from a path
+void printSchedule(const std::string& label, const Individual& ind) {
+    std::cout << label << " f=" << ind.fitness << " [";
+    for (int i = 0; i < (int)ind.schedule.size(); ++i) {
+        std::cout << ind.schedule[i] + 1;
+        if (i + 1 < (int)ind.schedule.size()) std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
+std::string scheduleToString(const Individual& ind) {
+    std::string s = "[";
+    for (int i = 0; i < (int)ind.schedule.size(); ++i) {
+        s += std::to_string(ind.schedule[i] + 1);
+        if (i + 1 < (int)ind.schedule.size()) s += ",";
+    }
+    s += "]";
+    return s;
+}
+
 std::string instanceName(const std::string& path) {
     size_t slash = path.find_last_of("/\\");
     std::string name = (slash == std::string::npos) ? path : path.substr(slash + 1);
@@ -69,30 +70,25 @@ std::string instanceName(const std::string& path) {
     return (dot == std::string::npos) ? name : name.substr(0, dot);
 }
 
-// CSV output
 void saveSummaryCSV(const std::string& instance,
                     const RunStats& random, const RunStats& greedy,
-                    const RunStats& ea,     const RunStats& sa)
+                    const RunStats& ea,     const RunStats& sa,
+                    const Individual& eaBest, const Individual& saBest)
 {
     std::filesystem::create_directories("results");
     std::ofstream file("results/results.csv", std::ios::app);
     if (!file.is_open()) return;
     if (file.tellp() == 0)
-        file << "instance;method;best;worst;avg;std\n";
-    auto write = [&](const std::string& method, const RunStats& s) {
-        file << instance << ";" << method << ";"
-             << s.best << ";" << s.worst << ";"
-             << std::fixed << std::setprecision(2)
-             << s.avg << ";" << s.std << "\n";
-    };
-    write("Random", random);
-    write("Greedy", greedy);
-    write("EA",     ea);
-    write("SA",     sa);
-    std::cout << "Results saved -> results/results.csv" << std::endl;
+        file << "instance;method;best;worst;avg;std;schedule\n";
+
+    file << instance << ";Random;" << random.best << ";" << random.worst << ";" << random.avg << ";" << random.std << ";-\n";
+    file << instance << ";Greedy;" << greedy.best << ";" << greedy.worst << ";" << greedy.avg << ";" << greedy.std << ";-\n";
+    file << instance << ";EA;"     << ea.best     << ";" << ea.worst     << ";" << ea.avg     << ";" << ea.std     << ";" << scheduleToString(eaBest) << "\n";
+    file << instance << ";SA;"     << sa.best     << ";" << sa.worst     << ";" << sa.avg     << ";" << sa.std     << ";" << scheduleToString(saBest) << "\n";
+
+    std::cout << "Results saved here results/results.csv" << std::endl;
 }
 
-// Algorithm runners
 Individual randomSearch(const ProblemInstance& inst, Evaluator& eval,
                         int budget, std::mt19937& rng, std::ofstream& log)
 {
@@ -168,25 +164,34 @@ RunStats runGreedy(const ProblemInstance& inst, Evaluator& eval,
 
 RunStats runEA(const ProblemInstance& inst, Evaluator& eval,
                EvolutionaryAlgorithm::Config& cfg,
-               int runs, const std::string& instance)
+               int runs, const std::string& instance,
+               Individual& bestOut)
 {
     std::cout << "Evolutionary Algorithm" << std::endl;
     std::vector<int> results;
     int bestRunIdx = 0;
     std::filesystem::create_directories("results/convergence");
+
     for (int r = 0; r < runs; ++r) {
         eval.resetCount();
         cfg.seed    = r * 1000;
         cfg.logFile = "results/convergence/convergence_ea_" + instance
                       + "_tmp" + std::to_string(r) + ".csv";
+
         EvolutionaryAlgorithm ea(inst, eval, cfg);
         Individual best = ea.run();
         results.push_back(best.fitness);
-        if (best.fitness < results[bestRunIdx]) bestRunIdx = r;
+
+        if (r == 0 || best.fitness < bestOut.fitness) {
+            bestOut    = best;
+            bestRunIdx = r;
+        }
+
         std::cout << "  Run " << std::setw(2) << (r + 1)
                   << ": " << best.fitness
                   << "  (evals=" << eval.evalCount() << ")" << std::endl;
     }
+
     cfg.logFile = "";
     std::string finalEA = "results/convergence/convergence_ea_" + instance + ".csv";
     for (int r = 0; r < runs; ++r) {
@@ -195,6 +200,7 @@ RunStats runEA(const ProblemInstance& inst, Evaluator& eval,
         if (r == bestRunIdx) std::rename(f.c_str(), finalEA.c_str());
         else                 std::remove(f.c_str());
     }
+
     auto stats = computeRunStats(results);
     printRunStats("EA:", stats);
     std::cout << std::endl;
@@ -203,25 +209,34 @@ RunStats runEA(const ProblemInstance& inst, Evaluator& eval,
 
 RunStats runSA(const ProblemInstance& inst, Evaluator& eval,
                SimulatedAnnealing::Config& cfg,
-               int budget, int runs, const std::string& instance)
+               int budget, int runs, const std::string& instance,
+               Individual& bestOut)
 {
     std::cout << "Simulated Annealing" << std::endl;
     std::vector<int> results;
     int bestRunIdx = 0;
     std::filesystem::create_directories("results/convergence");
+
     for (int r = 0; r < runs; ++r) {
         eval.resetCount();
         cfg.seed    = r * 1000;
         cfg.logFile = "results/convergence/convergence_sa_" + instance
                       + "_tmp" + std::to_string(r) + ".csv";
+
         SimulatedAnnealing sa(inst, eval, cfg);
         Individual best = sa.run(budget);
         results.push_back(best.fitness);
-        if (best.fitness < results[bestRunIdx]) bestRunIdx = r;
+
+        if (r == 0 || best.fitness < bestOut.fitness) {
+            bestOut    = best;
+            bestRunIdx = r;
+        }
+
         std::cout << "  Run " << std::setw(2) << (r + 1)
                   << ": " << best.fitness
                   << "  (evals=" << eval.evalCount() << ")" << std::endl;
     }
+
     cfg.logFile = "";
     std::string finalSA = "results/convergence/convergence_sa_" + instance + ".csv";
     for (int r = 0; r < runs; ++r) {
@@ -230,6 +245,7 @@ RunStats runSA(const ProblemInstance& inst, Evaluator& eval,
         if (r == bestRunIdx) std::rename(f.c_str(), finalSA.c_str());
         else                 std::remove(f.c_str());
     }
+
     auto stats = computeRunStats(results);
     printRunStats("SA:", stats);
     std::cout << std::endl;
@@ -239,8 +255,6 @@ RunStats runSA(const ProblemInstance& inst, Evaluator& eval,
 int main(int argc, char* argv[]) {
 
     if (argc < 2) {
-        std::cerr << "Usage: ./pfsp <path_to_instance.fsp>" << std::endl;
-        std::cerr << "Example: ./pfsp data/tai20_5_0.fsp"   << std::endl;
         return 1;
     }
 
@@ -273,22 +287,28 @@ int main(int argc, char* argv[]) {
 
     const int budget = eaCfg.popSize * eaCfg.generations;
     eaCfg.budget = budget;
-    const int runs   = 10;
+    const int runs = 10;
 
     std::cout << "Instance: " << instance << std::endl;
-    std::cout << "Budget: " << budget << " evaluations  |  Runs: " << runs
+    std::cout << "Budget: "   << budget   << " evaluations  |  Runs: " << runs
               << std::endl << std::endl;
 
     auto randomStats = runRandomSearch(inst, eval, budget, runs, rng, instance);
-    auto greedyStats = runGreedy      (inst, eval,         1,      instance);
-    auto eaStats     = runEA          (inst, eval, eaCfg,  runs,      instance);
-    auto saStats     = runSA          (inst, eval, saCfg,  budget, runs, instance);
+    auto greedyStats = runGreedy      (inst, eval, 1,             instance);
 
+    Individual eaBest, saBest;
+    auto eaStats = runEA(inst, eval, eaCfg,         runs, instance, eaBest);
+    auto saStats = runSA(inst, eval, saCfg, budget, runs, instance, saBest);
+
+    std::cout << "\n=== SUMMARY ===" << std::endl;
     printRunStats("Random:", randomStats);
     printRunStats("Greedy:", greedyStats);
     printRunStats("EA:",     eaStats);
     printRunStats("SA:",     saStats);
 
-    saveSummaryCSV(instance, randomStats, greedyStats, eaStats, saStats);
+    printSchedule("EA:", eaBest);
+    printSchedule("SA:", saBest);
+
+    saveSummaryCSV(instance, randomStats, greedyStats, eaStats, saStats, eaBest, saBest);
     return 0;
 }
