@@ -73,6 +73,7 @@ std::string instanceName(const std::string& path) {
 void saveSummaryCSV(const std::string& instance,
                     const RunStats& random, const RunStats& greedy,
                     const RunStats& ea,     const RunStats& sa,
+                    const Individual& randomBest, const Individual& greedyBest,
                     const Individual& eaBest, const Individual& saBest)
 {
     std::filesystem::create_directories("results");
@@ -81,10 +82,10 @@ void saveSummaryCSV(const std::string& instance,
     if (file.tellp() == 0)
         file << "instance;method;best;worst;avg;std;schedule\n";
 
-    file << instance << ";Random;" << random.best << ";" << random.worst << ";" << random.avg << ";" << random.std << ";-\n";
-    file << instance << ";Greedy;" << greedy.best << ";" << greedy.worst << ";" << greedy.avg << ";" << greedy.std << ";-\n";
-    file << instance << ";EA;"     << ea.best     << ";" << ea.worst     << ";" << ea.avg     << ";" << ea.std     << ";" << scheduleToString(eaBest) << "\n";
-    file << instance << ";SA;"     << sa.best     << ";" << sa.worst     << ";" << sa.avg     << ";" << sa.std     << ";" << scheduleToString(saBest) << "\n";
+    file << instance << ";Random;" << random.best << ";" << random.worst << ";" << random.avg << ";" << random.std << ";" << scheduleToString(randomBest)   << "\n";
+    file << instance << ";Greedy;" << greedy.best << ";" << greedy.worst << ";" << greedy.avg << ";" << greedy.std << ";" << scheduleToString(greedyBest)   << "\n";
+    file << instance << ";EA;"     << ea.best     << ";" << ea.worst     << ";" << ea.avg     << ";" << ea.std     << ";" << scheduleToString(eaBest)       << "\n";
+    file << instance << ";SA;"     << sa.best     << ";" << sa.worst     << ";" << sa.avg     << ";" << sa.std     << ";" << scheduleToString(saBest)       << "\n";
 
     std::cout << "Results saved here results/results.csv" << std::endl;
 }
@@ -109,9 +110,9 @@ Individual randomSearch(const ProblemInstance& inst, Evaluator& eval,
 
 RunStats runRandomSearch(const ProblemInstance& inst, Evaluator& eval,
                          int budget, int runs, std::mt19937& rng,
-                         const std::string& instance)
+                         const std::string& instance,
+                         Individual& bestOut)
 {
-    std::cout << "Random Search" << std::endl;
     std::vector<int> results;
     std::ofstream log;
     for (int r = 0; r < runs; ++r) {
@@ -121,7 +122,10 @@ RunStats runRandomSearch(const ProblemInstance& inst, Evaluator& eval,
             log.open("results/convergence/convergence_random_" + instance + ".csv");
             log << "evals;best\n";
         }
-        results.push_back(randomSearch(inst, eval, budget, rng, log).fitness);
+        Individual best = randomSearch(inst, eval, budget, rng, log);
+        results.push_back(best.fitness);
+        if (r == 0 || best.fitness < bestOut.fitness)
+            bestOut = best;
     }
     auto stats = computeRunStats(results);
     printRunStats("Random:", stats);
@@ -130,7 +134,7 @@ RunStats runRandomSearch(const ProblemInstance& inst, Evaluator& eval,
 }
 
 RunStats runGreedy(const ProblemInstance& inst, Evaluator& eval,
-                   int runs, const std::string& instance)
+                   int runs, const std::string& instance, Individual& bestOut)
 {
     std::cout << "Greedy" << std::endl;
     std::vector<int> results;
@@ -152,6 +156,8 @@ RunStats runGreedy(const ProblemInstance& inst, Evaluator& eval,
                 log << eval.evalCount() << ";" << best.fitness << "\n";
         }
         results.push_back(best.fitness);
+        if (r == 0 || best.fitness < bestOut.fitness)
+            bestOut = best;
         std::cout << "  Run " << std::setw(2) << (r + 1)
                   << ": " << best.fitness
                   << "  (evals=" << eval.evalCount() << ")" << std::endl;
@@ -293,12 +299,11 @@ int main(int argc, char* argv[]) {
     std::cout << "Budget: "   << budget   << " evaluations  |  Runs: " << runs
               << std::endl << std::endl;
 
-    auto randomStats = runRandomSearch(inst, eval, budget, runs, rng, instance);
-    auto greedyStats = runGreedy      (inst, eval, 1,             instance);
-
-    Individual eaBest, saBest;
-    auto eaStats = runEA(inst, eval, eaCfg,         runs, instance, eaBest);
-    auto saStats = runSA(inst, eval, saCfg, budget, runs, instance, saBest);
+    Individual randomBest, greedyBest, eaBest, saBest;
+    auto randomStats = runRandomSearch(inst, eval, budget, runs, rng, instance, randomBest);
+    auto greedyStats = runGreedy      (inst, eval, 1,             instance,     greedyBest);
+    auto eaStats     = runEA          (inst, eval, eaCfg,         runs, instance, eaBest);
+    auto saStats     = runSA          (inst, eval, saCfg, budget, runs, instance, saBest);
 
     std::cout << "\n=== SUMMARY ===" << std::endl;
     printRunStats("Random:", randomStats);
@@ -306,9 +311,11 @@ int main(int argc, char* argv[]) {
     printRunStats("EA:",     eaStats);
     printRunStats("SA:",     saStats);
 
-    printSchedule("EA:", eaBest);
-    printSchedule("SA:", saBest);
+    printSchedule("Random:", randomBest);
+    printSchedule("Greedy:", greedyBest);
+    printSchedule("EA:",     eaBest);
+    printSchedule("SA:",     saBest);
 
-    saveSummaryCSV(instance, randomStats, greedyStats, eaStats, saStats, eaBest, saBest);
+    saveSummaryCSV(instance, randomStats, greedyStats, eaStats, saStats, randomBest, greedyBest, eaBest, saBest);
     return 0;
 }
